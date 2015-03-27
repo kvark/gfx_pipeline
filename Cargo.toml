@@ -13,10 +13,10 @@ name = "gfx_pipeline"
 [dependencies.gfx_phase]
 git = "https://github.com/kvark/gfx_scene"
 
-[dependencies.gfx_scene]
-git = "https://github.com/kvark/gfx_scene"
+#[dependencies.gfx_scene]
+#git = "https://github.com/kvark/gfx_scene"
 
-[dev_dependencies.gfx]
+[dependencies.gfx]
 git = "https://github.com/gfx-rs/gfx-rs"
 
 [dependencies.gfx_macros]
@@ -25,12 +25,6 @@ plugin = true
 
 [dependencies.cgmath]
 git = "https://github.com/bjz/cgmath-rs"
-
-[dev_dependencies.gfx_device_gl]
-git = "https://github.com/gfx-rs/gfx_device_gl"
-
-[dev_dependencies.glutin]
-git = "https://github.com/tomaka/glutin"
 
 [dev_dependencies]
 draw_state = "*"
