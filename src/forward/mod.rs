@@ -1,7 +1,7 @@
 use gfx;
 use gfx_phase;
 
-pub type Phase<R> = gfx_phase::CachedPhase<R, Material<R>, ::ViewInfo<f32>, Technique<R>>;
+pub type Phase<R> = gfx_phase::CachedPhase<R, ::Material<R>, ::view::Info<f32>, Technique<R>>;
 
 #[derive(Clone)]
 #[shader_param]
@@ -15,14 +15,6 @@ pub struct Params<R: gfx::Resources> {
     #[name = "t_Diffuse"]
     pub texture: gfx::shade::TextureParam<R>,
 }
-
-#[derive(Clone)]
-pub struct Material<R: gfx::Resources> {
-    pub color: [f32; 4],
-    pub texture: gfx::shade::TextureParam<R>,
-}
-
-impl<R: gfx::Resources> gfx_phase::Material for Material<R> {}
 
 
 pub struct Technique<R: gfx::Resources> {
@@ -46,15 +38,15 @@ impl<R: gfx::Resources> Technique<R> {
     }
 }
 
-impl<R: gfx::Resources> gfx_phase::Technique<R, Material<R>, ::ViewInfo<f32>> for Technique<R> {
+impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>> for Technique<R> {
     type Kernel = ();
     type Params = Params<R>;
 
-    fn test(&self, _mesh: &gfx::Mesh<R>, _mat: &Material<R>) -> Option<()> {
+    fn test(&self, _mesh: &gfx::Mesh<R>, _mat: &::Material<R>) -> Option<()> {
         Some(())
     }
 
-    fn compile<'a>(&'a self, _kernel: (), _space: ::ViewInfo<f32>)
+    fn compile<'a>(&'a self, _kernel: (), _space: ::view::Info<f32>)
                    -> gfx_phase::TechResult<'a, R, Params<R>> {
         (   &self.program,
             Params {
@@ -68,7 +60,7 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, Material<R>, ::ViewInfo<f32>> fo
         )
     }
 
-    fn fix_params(&self, mat: &Material<R>, space: &::ViewInfo<f32>, params: &mut Params<R>) {
+    fn fix_params(&self, mat: &::Material<R>, space: &::view::Info<f32>, params: &mut Params<R>) {
         use cgmath::FixedArray;
         params.mvp = *space.mx_vertex.as_fixed();
         params.normal = *space.mx_normal.as_fixed();
