@@ -16,37 +16,54 @@ pub struct Params<R: gfx::Resources> {
     pub texture: gfx::shade::TextureParam<R>,
 }
 
+const PHONG_VS: &'static [u8] = include_bytes!("../../gpu/phong.glslv");
+const PHONG_FS: &'static [u8] = include_bytes!("../../gpu/phong.glslf");
+
+pub enum Error {
+    Program(gfx::ProgramError),
+}
 
 pub struct Technique<R: gfx::Resources> {
     program: gfx::ProgramHandle<R>,
-    state: gfx::DrawState,
+    state_additive: gfx::DrawState,
+    state_alpha: gfx::DrawState,
+    state_opaque: gfx::DrawState,
     default_texture_param: gfx::shade::TextureParam<R>,
 }
 
 impl<R: gfx::Resources> Technique<R> {
-    pub fn new(program: gfx::ProgramHandle<R>, tex_param: gfx::shade::TextureParam<R>)
-               -> Technique<R> {
+    pub fn new<F: gfx::Factory<R>>(factory: &mut F, tex_param: gfx::shade::TextureParam<R>)
+               -> Result<Technique<R>, Error> {
+        use gfx::traits::FactoryExt;
+        let program = match factory.link_program(PHONG_VS, PHONG_FS) {
+            Ok(p) => p,
+            Err(e) => return Err(Error::Program(e)),
+        };
         let state = gfx::DrawState::new().depth(
             gfx::state::Comparison::LessEqual,
             true
         );
-        Technique {
+        Ok(Technique {
             program: program,
-            state: state,
+            state_additive: state.clone().blend(gfx::BlendPreset::Additive),
+            state_alpha: state.clone().blend(gfx::BlendPreset::Alpha),
+            state_opaque: state,
             default_texture_param: tex_param,
-        }
+        })
     }
 }
 
+pub type Kernel = Option<gfx::BlendPreset>;
+
 impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>> for Technique<R> {
-    type Kernel = ();
+    type Kernel = Kernel;
     type Params = Params<R>;
 
-    fn test(&self, _mesh: &gfx::Mesh<R>, _mat: &::Material<R>) -> Option<()> {
-        Some(())
+    fn test(&self, _mesh: &gfx::Mesh<R>, mat: &::Material<R>) -> Option<Kernel> {
+        Some(mat.blend)
     }
 
-    fn compile<'a>(&'a self, _kernel: (), _space: ::view::Info<f32>)
+    fn compile<'a>(&'a self, kernel: Kernel, _space: ::view::Info<f32>)
                    -> gfx_phase::TechResult<'a, R, Params<R>> {
         (   &self.program,
             Params {
@@ -56,7 +73,11 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
                 texture: self.default_texture_param.clone(),
             },
             None,
-            &self.state,
+            match kernel {
+                Some(gfx::BlendPreset::Additive) => &self.state_additive,
+                Some(gfx::BlendPreset::Alpha) => &self.state_alpha,
+                None => &self.state_opaque,
+            }
         )
     }
 

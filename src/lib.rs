@@ -11,8 +11,9 @@ pub mod view;
 
 #[derive(Clone)]
 pub struct Material<R: gfx::Resources> {
-    pub color: [f32; 4],
+    pub color: gfx::ColorValue,
     pub texture: gfx::shade::TextureParam<R>,
+    pub blend: Option<gfx::BlendPreset>,
 }
 
 impl<R: gfx::Resources> gfx_phase::Material for Material<R> {}
