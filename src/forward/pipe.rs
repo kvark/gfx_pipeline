@@ -20,6 +20,7 @@ pub fn order<S: PartialOrd, R: gfx::Resources>(
 pub struct Pipeline<D: gfx::Device> {
     pub phase: super::Phase<D::Resources>,
     pub renderer: gfx::Renderer<D::Resources, D::CommandBuffer>,
+    pub background: Option<gfx::ColorValue>,
 }
 
 impl<
@@ -34,6 +35,7 @@ impl<
         super::Technique::new(device, tex_default).map(|tech| Pipeline {
             phase: gfx_phase::Phase::new_cached("Main", tech),
             renderer: renderer,
+            background: Some([0.0; 4]),
         })
     }
 }
@@ -47,6 +49,20 @@ impl<D: gfx::Device> ::Pipeline<f32, D> for Pipeline<D> {
     where
         C::Entity: gfx_phase::Entity<D::Resources, ::Material<D::Resources>>,
     {
+        self.renderer.reset();
+        // clear
+        match self.background {
+            Some(color) => {
+                let cdata = gfx::ClearData {
+                    color: color,
+                    depth: 1.0,
+                    stencil: 0,
+                };
+                self.renderer.clear(cdata, gfx::COLOR | gfx::DEPTH, frame);
+            },
+            None => (),
+        }
+        // draw
         match scene.draw_ordered(&mut self.phase, order, camera, frame, &mut self.renderer)  {
             Ok(_) => Ok(self.renderer.as_buffer()),
             Err(e) => Err(e),
