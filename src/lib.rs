@@ -7,7 +7,10 @@ extern crate gfx_phase;
 extern crate gfx_scene;
 
 pub mod forward;
-pub mod view;
+mod view;
+
+pub use self::view::Info as ViewInfo;
+
 
 #[derive(Clone)]
 pub struct Material<R: gfx::Resources> {
@@ -17,3 +20,12 @@ pub struct Material<R: gfx::Resources> {
 }
 
 impl<R: gfx::Resources> gfx_phase::Material for Material<R> {}
+
+pub trait Pipeline<S, D: gfx::Device> {
+    fn render<
+        C: gfx_scene::OrderedScene<D::Resources, ViewInfo = view::Info<S>>,
+    >(  &mut self, scene: &C, camera: &C::Camera, frame: &gfx::Frame<D::Resources>)
+        -> Result<gfx::SubmitInfo<D>, gfx_scene::Error>
+    where
+        C::Entity: gfx_phase::Entity<D::Resources, Material<D::Resources>>;
+}

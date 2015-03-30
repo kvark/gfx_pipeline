@@ -17,7 +17,7 @@ impl<S: cgmath::BaseFloat> gfx_phase::ToDepth for Info<S> {
 
 impl<
     S: cgmath::BaseFloat + 'static,
-    //R: cgmath::Rotation3<S>, //TODO
+    //R: cgmath::Rotation3<S>,
     T: cgmath::CompositeTransform3<S, cgmath::Quaternion<S>>,
 > gfx_scene::ViewInfo<S, T> for Info<S> {
     fn new(mvp: cgmath::Matrix4<S>, view: T, _model: T) -> Info<S> {

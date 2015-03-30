@@ -1,6 +1,10 @@
 use gfx;
 use gfx_phase;
 
+mod pipe;
+
+pub use self::pipe::{order, Pipeline};
+
 pub type Phase<R> = gfx_phase::CachedPhase<R, ::Material<R>, ::view::Info<f32>, Technique<R>>;
 
 #[derive(Clone)]
@@ -19,10 +23,6 @@ pub struct Params<R: gfx::Resources> {
 const PHONG_VS: &'static [u8] = include_bytes!("../../gpu/phong.glslv");
 const PHONG_FS: &'static [u8] = include_bytes!("../../gpu/phong.glslf");
 
-pub enum Error {
-    Program(gfx::ProgramError),
-}
-
 pub struct Technique<R: gfx::Resources> {
     program: gfx::ProgramHandle<R>,
     state_additive: gfx::DrawState,
@@ -32,24 +32,26 @@ pub struct Technique<R: gfx::Resources> {
 }
 
 impl<R: gfx::Resources> Technique<R> {
-    pub fn new<F: gfx::Factory<R>>(factory: &mut F, tex_param: gfx::shade::TextureParam<R>)
-               -> Result<Technique<R>, Error> {
-        use gfx::traits::FactoryExt;
-        let program = match factory.link_program(PHONG_VS, PHONG_FS) {
-            Ok(p) => p,
-            Err(e) => return Err(Error::Program(e)),
-        };
+    pub fn from_program(program: gfx::ProgramHandle<R>, tex_param: gfx::shade::TextureParam<R>)
+                        -> Technique<R> {
         let state = gfx::DrawState::new().depth(
             gfx::state::Comparison::LessEqual,
             true
         );
-        Ok(Technique {
+        Technique {
             program: program,
             state_additive: state.clone().blend(gfx::BlendPreset::Additive),
             state_alpha: state.clone().blend(gfx::BlendPreset::Alpha),
             state_opaque: state,
             default_texture_param: tex_param,
-        })
+        }
+    }
+
+    pub fn new<F: gfx::Factory<R>>(factory: &mut F, tex_param: gfx::shade::TextureParam<R>)
+               -> Result<Technique<R>, gfx::ProgramError> {
+        use gfx::traits::FactoryExt;
+        factory.link_program(PHONG_VS, PHONG_FS)
+               .map(|p| Technique::from_program(p, tex_param))
     }
 }
 
