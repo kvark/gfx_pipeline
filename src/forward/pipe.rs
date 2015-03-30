@@ -22,6 +22,22 @@ pub struct Pipeline<D: gfx::Device> {
     pub renderer: gfx::Renderer<D::Resources, D::CommandBuffer>,
 }
 
+impl<
+    R: gfx::Resources,
+    C: gfx::CommandBuffer<R>,
+    D: gfx::Device<Resources = R, CommandBuffer = C> + gfx::Factory<R>
+> Pipeline<D>{
+    pub fn new(device: &mut D, tex_default: gfx::shade::TextureParam<R>)
+               -> Result<Pipeline<D>, gfx::ProgramError> {
+        use gfx::traits::DeviceExt;
+        let renderer = device.create_renderer();
+        super::Technique::new(device, tex_default).map(|tech| Pipeline {
+            phase: gfx_phase::Phase::new_cached("Main", tech),
+            renderer: renderer,
+        })
+    }
+}
+
 impl<D: gfx::Device> ::Pipeline<f32, D> for Pipeline<D> {
     fn render<
         C: gfx_scene::OrderedScene<D::Resources, ViewInfo = ::view::Info<f32>>,
