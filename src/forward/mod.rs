@@ -28,6 +28,7 @@ pub struct Technique<R: gfx::Resources> {
     state_additive: gfx::DrawState,
     state_alpha: gfx::DrawState,
     state_opaque: gfx::DrawState,
+    state_multiply: gfx::DrawState,
     default_texture_param: gfx::shade::TextureParam<R>,
 }
 
@@ -42,6 +43,7 @@ impl<R: gfx::Resources> Technique<R> {
             program: program,
             state_additive: state.clone().blend(gfx::BlendPreset::Additive),
             state_alpha: state.clone().blend(gfx::BlendPreset::Alpha),
+            state_multiply: state.clone().blend(gfx::BlendPreset::Multiplicative),
             state_opaque: state,
             default_texture_param: tex_param,
         }
@@ -78,6 +80,7 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
             match kernel {
                 Some(gfx::BlendPreset::Additive) => &self.state_additive,
                 Some(gfx::BlendPreset::Alpha) => &self.state_alpha,
+                Some(gfx::BlendPreset::Multiplicative) => &self.state_multiply,
                 None => &self.state_opaque,
             }
         )
