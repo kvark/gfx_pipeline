@@ -25,7 +25,7 @@ const PHONG_FS: &'static [u8] = include_bytes!("../../gpu/phong.glslf");
 
 pub struct Technique<R: gfx::Resources> {
     program: gfx::ProgramHandle<R>,
-    state_additive: gfx::DrawState,
+    state_add: gfx::DrawState,
     state_alpha: gfx::DrawState,
     state_opaque: gfx::DrawState,
     state_multiply: gfx::DrawState,
@@ -41,9 +41,9 @@ impl<R: gfx::Resources> Technique<R> {
         );
         Technique {
             program: program,
-            state_additive: state.clone().blend(gfx::BlendPreset::Additive),
+            state_add: state.clone().blend(gfx::BlendPreset::Add),
             state_alpha: state.clone().blend(gfx::BlendPreset::Alpha),
-            state_multiply: state.clone().blend(gfx::BlendPreset::Multiplicative),
+            state_multiply: state.clone().blend(gfx::BlendPreset::Multiply),
             state_opaque: state,
             default_texture_param: tex_param,
         }
@@ -64,7 +64,10 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
     type Params = Params<R>;
 
     fn test(&self, _mesh: &gfx::Mesh<R>, mat: &::Material<R>) -> Option<Kernel> {
-        Some(mat.blend)
+        match mat.blend {
+            Some(gfx::BlendPreset::Invert) => None,
+            other => Some(other)
+        }
     }
 
     fn compile<'a>(&'a self, kernel: Kernel, _space: ::view::Info<f32>)
@@ -78,10 +81,10 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
             },
             None,
             match kernel {
-                Some(gfx::BlendPreset::Additive) => &self.state_additive,
+                Some(gfx::BlendPreset::Add) => &self.state_add,
                 Some(gfx::BlendPreset::Alpha) => &self.state_alpha,
-                Some(gfx::BlendPreset::Multiplicative) => &self.state_multiply,
-                None => &self.state_opaque,
+                Some(gfx::BlendPreset::Multiply) => &self.state_multiply,
+                _ => &self.state_opaque,
             }
         )
     }
