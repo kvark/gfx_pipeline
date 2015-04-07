@@ -64,6 +64,9 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
     type Params = Params<R>;
 
     fn test(&self, _mesh: &gfx::Mesh<R>, mat: &::Material<R>) -> Option<Kernel> {
+        if !mat.visible {
+            return None
+        }
         match mat.blend {
             Some(gfx::BlendPreset::Invert) => None,
             other => Some(other)

@@ -2,7 +2,7 @@ use cgmath;
 use gfx_phase;
 use gfx_scene;
 
-#[derive(Copy)]
+#[derive(Clone, Copy)]
 pub struct Info<S> {
     pub mx_vertex: cgmath::Matrix4<S>,
     pub mx_normal: cgmath::Matrix3<S>,

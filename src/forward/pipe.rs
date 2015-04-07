@@ -23,16 +23,13 @@ pub struct Pipeline<D: gfx::Device> {
     pub background: Option<gfx::ColorValue>,
 }
 
-impl<
-    R: gfx::Resources,
-    C: gfx::CommandBuffer<R>,
-    D: gfx::Device<Resources = R, CommandBuffer = C> + gfx::Factory<R>
-> Pipeline<D>{
-    pub fn new(device: &mut D, tex_default: gfx::shade::TextureParam<R>)
+impl<D: gfx::Device> Pipeline<D> {
+    pub fn new<F: gfx::Factory<D::Resources>>(factory: &mut F,
+               tex_default: gfx::shade::TextureParam<D::Resources>)
                -> Result<Pipeline<D>, gfx::ProgramError> {
-        use gfx::traits::DeviceExt;
-        let renderer = device.create_renderer();
-        super::Technique::new(device, tex_default).map(|tech| Pipeline {
+        use gfx::traits::RenderFactory;
+        let renderer = factory.create_renderer();
+        super::Technique::new(factory, tex_default).map(|tech| Pipeline {
             phase: gfx_phase::Phase::new_cached("Main", tech),
             renderer: renderer,
             background: Some([0.0; 4]),

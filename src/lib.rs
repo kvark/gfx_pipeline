@@ -15,6 +15,7 @@ pub use gfx_scene::Error;
 
 #[derive(Clone)]
 pub struct Material<R: gfx::Resources> {
+    pub visible: bool,
     pub color: gfx::ColorValue,
     pub texture: gfx::shade::TextureParam<R>,
     pub blend: Option<gfx::BlendPreset>,
