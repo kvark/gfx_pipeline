@@ -24,8 +24,11 @@ pub struct Material<R: gfx::Resources> {
 impl<R: gfx::Resources> gfx_phase::Material for Material<R> {}
 
 pub trait Pipeline<S, D: gfx::Device> {
-    fn render<C: gfx_scene::OrderedScene<D::Resources, ViewInfo = view::Info<S>>>(
-              &mut self, scene: &C, camera: &C::Camera, frame: &gfx::Frame<D::Resources>)
-              -> Result<gfx::SubmitInfo<D>, gfx_scene::Error> where
+    fn render<
+        C: gfx_scene::OrderedScene<D::Resources, ViewInfo = view::Info<S>>,
+        O: gfx::Output<D::Resources>,
+    >(  &mut self, scene: &C, camera: &C::Camera, output: &O)
+        -> Result<gfx::SubmitInfo<D>, gfx_scene::Error>
+    where
         C::Entity: gfx_phase::Entity<D::Resources, Material<D::Resources>>;
 }

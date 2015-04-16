@@ -40,8 +40,8 @@ impl<D: gfx::Device> Pipeline<D> {
 impl<D: gfx::Device> ::Pipeline<f32, D> for Pipeline<D> {
     fn render<
         C: gfx_scene::OrderedScene<D::Resources, ViewInfo = ::view::Info<f32>>,
-    >(  &mut self, scene: &C, camera: &C::Camera,
-        frame: &gfx::Frame<D::Resources>)
+        O: gfx::Output<D::Resources>,
+    >(  &mut self, scene: &C, camera: &C::Camera, output: &O)
         -> Result<gfx::SubmitInfo<D>, gfx_scene::Error>
     where
         C::Entity: gfx_phase::Entity<D::Resources, ::Material<D::Resources>>,
@@ -55,12 +55,12 @@ impl<D: gfx::Device> ::Pipeline<f32, D> for Pipeline<D> {
                     depth: 1.0,
                     stencil: 0,
                 };
-                self.renderer.clear(cdata, gfx::COLOR | gfx::DEPTH, frame);
+                self.renderer.clear(cdata, gfx::COLOR | gfx::DEPTH, output);
             },
             None => (),
         }
         // draw
-        match scene.draw_ordered(&mut self.phase, order, camera, frame, &mut self.renderer)  {
+        match scene.draw_ordered(&mut self.phase, order, camera, output, &mut self.renderer)  {
             Ok(_) => Ok(self.renderer.as_buffer()),
             Err(e) => Err(e),
         }
