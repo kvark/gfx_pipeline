@@ -24,7 +24,7 @@ pub struct Pipeline<D: gfx::Device> {
 }
 
 impl<D: gfx::Device> Pipeline<D> {
-    pub fn new<F: gfx::Factory<D::Resources>>(factory: &mut F,
+    pub fn new<F: gfx::Factory<D::Resources>>(_: &D, factory: &mut F,
                tex_default: gfx::shade::TextureParam<D::Resources>)
                -> Result<Pipeline<D>, gfx::ProgramError> {
         use gfx::traits::RenderFactory;
