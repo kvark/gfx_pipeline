@@ -10,7 +10,7 @@ pub mod forward;
 mod view;
 
 pub use self::view::Info as ViewInfo;
-pub use gfx_scene::Error;
+pub use gfx_scene::{Error, FailCount};
 
 
 #[derive(Clone)]
@@ -29,5 +29,5 @@ pub trait Pipeline<S, R: gfx::Resources, E> {
         C: gfx::CommandBuffer<R>,
         O: gfx::Output<R>,
     >(  &mut self, &A, &mut gfx::Renderer<R, C>, &A::Camera, &O)
-        -> Result<(), gfx_scene::Error>;
+        -> Result<FailCount, Error>;
 }

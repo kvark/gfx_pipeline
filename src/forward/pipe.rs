@@ -40,7 +40,7 @@ impl<R: gfx::Resources, E: gfx_phase::Entity<R, ::Material<R>>> ::Pipeline<f32, 
         C: gfx::CommandBuffer<R>,
         O: gfx::Output<R>,
     >(  &mut self, scene: &A, renderer: &mut gfx::Renderer<R, C>,
-        camera: &A::Camera, output: &O) -> Result<(), gfx_scene::Error>
+        camera: &A::Camera, output: &O) -> Result<::FailCount, ::Error>
     {
         renderer.reset();
         // clear

@@ -72,6 +72,9 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
         if !mat.visible {
             return None
         }
+        //if gfx::render::mesh::Link::new(mesh, self.program.get_info()).is_err() {
+        //    return None
+        //}
         match mat.blend {
             Some(gfx::BlendPreset::Invert) => None,
             other => Some(other)
