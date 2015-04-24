@@ -30,6 +30,7 @@ const PHONG_FS    : &'static [u8] = include_bytes!("../../gpu/phong.glslf");
 const PHONG_TEX_VS: &'static [u8] = include_bytes!("../../gpu/phong_tex.glslv");
 const PHONG_TEX_FS: &'static [u8] = include_bytes!("../../gpu/phong_tex.glslf");
 
+#[derive(Clone, Debug, PartialEq)]
 pub enum Error {
     Texture(gfx::tex::TextureError),
     Program(gfx::ProgramError),
