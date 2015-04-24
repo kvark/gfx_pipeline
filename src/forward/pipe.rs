@@ -22,10 +22,9 @@ pub struct Pipeline<R: gfx::Resources, E> {
 }
 
 impl<R: gfx::Resources, E> Pipeline<R, E> {
-    pub fn new<F: gfx::Factory<R>>(factory: &mut F,
-               tex_default: gfx::shade::TextureParam<R>)
-               -> Result<Pipeline<R, E>, gfx::ProgramError> {
-        super::Technique::new(factory, tex_default).map(|tech| Pipeline {
+    pub fn new<F: gfx::Factory<R>>(factory: &mut F)
+               -> Result<Pipeline<R, E>, super::Error> {
+        super::Technique::new(factory).map(|tech| Pipeline {
             phase: gfx_phase::Phase::new("Main", tech)
                                     .with_sort(order)
                                     .with_cache(),

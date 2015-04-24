@@ -30,6 +30,24 @@ const PHONG_FS    : &'static [u8] = include_bytes!("../../gpu/phong.glslf");
 const PHONG_TEX_VS: &'static [u8] = include_bytes!("../../gpu/phong_tex.glslv");
 const PHONG_TEX_FS: &'static [u8] = include_bytes!("../../gpu/phong_tex.glslf");
 
+pub enum Error {
+    Texture(gfx::tex::TextureError),
+    Program(gfx::ProgramError),
+}
+
+impl From<gfx::tex::TextureError> for Error {
+    fn from(e: gfx::tex::TextureError) -> Error {
+        Error::Texture(e)
+    }
+}
+
+impl From<gfx::ProgramError> for Error {
+    fn from(e: gfx::ProgramError) -> Error {
+        Error::Program(e)
+    }
+}
+
+
 pub struct Technique<R: gfx::Resources> {
     program: gfx::ProgramHandle<R>,
     program_textured: gfx::ProgramHandle<R>,
@@ -37,35 +55,29 @@ pub struct Technique<R: gfx::Resources> {
     state_alpha: gfx::DrawState,
     state_opaque: gfx::DrawState,
     state_multiply: gfx::DrawState,
-    default_texture_param: gfx::shade::TextureParam<R>,
+    pub default_texture: gfx::TextureHandle<R>,
 }
 
 impl<R: gfx::Resources> Technique<R> {
-    pub fn from_program(program: gfx::ProgramHandle<R>,
-                        program_tex: gfx::ProgramHandle<R>,
-                        tex_param: gfx::shade::TextureParam<R>)
-                        -> Technique<R> {
+    pub fn new<F: gfx::Factory<R>>(factory: &mut F)
+               -> Result<Technique<R>, Error> {
+        use gfx::traits::FactoryExt;
+        let texture = try!(factory.create_texture_rgba8_static(1, 1, &[0xFFFFFFFF]));
+        let prog0 = try!(factory.link_program(PHONG_VS, PHONG_FS));
+        let prog1 = try!(factory.link_program(PHONG_TEX_VS, PHONG_TEX_FS));
         let state = gfx::DrawState::new().depth(
             gfx::state::Comparison::LessEqual,
             true
         );
-        Technique {
-            program: program,
-            program_textured: program_tex,
+        Ok(Technique {
+            program: prog0,
+            program_textured: prog1,
             state_add: state.clone().blend(gfx::BlendPreset::Add),
             state_alpha: state.clone().blend(gfx::BlendPreset::Alpha),
             state_multiply: state.clone().blend(gfx::BlendPreset::Multiply),
             state_opaque: state,
-            default_texture_param: tex_param,
-        }
-    }
-
-    pub fn new<F: gfx::Factory<R>>(factory: &mut F, tex_param: gfx::shade::TextureParam<R>)
-               -> Result<Technique<R>, gfx::ProgramError> {
-        use gfx::traits::FactoryExt;
-        let prog0 = try!(factory.link_program(PHONG_VS, PHONG_FS));
-        let prog1 = try!(factory.link_program(PHONG_TEX_VS, PHONG_TEX_FS));
-        Ok(Technique::from_program(prog0, prog1, tex_param))
+            default_texture: texture,
+        })
     }
 }
 
@@ -104,7 +116,7 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
                 mvp: [[0.0; 4]; 4],
                 normal: [[0.0; 3]; 3],
                 color: [0.0; 4],
-                texture: self.default_texture_param.clone(),
+                texture: (self.default_texture.clone(), None),
             },
             None,
             match kernel.blend {
