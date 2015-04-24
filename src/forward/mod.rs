@@ -5,7 +5,12 @@ mod pipe;
 
 pub use self::pipe::{order, Pipeline};
 
-pub type Phase<R> = gfx_phase::CachedPhase<R, ::Material<R>, ::view::Info<f32>, Technique<R>>;
+pub type Phase<R, E> = gfx_phase::CachedPhase<R,
+    ::Material<R>,
+    ::view::Info<f32>,
+    Technique<R>,
+    E,
+>;
 
 #[derive(Clone)]
 #[shader_param]
