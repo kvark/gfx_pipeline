@@ -25,11 +25,14 @@ pub struct Params<R: gfx::Resources> {
     pub texture: gfx::shade::TextureParam<R>,
 }
 
-const PHONG_VS: &'static [u8] = include_bytes!("../../gpu/phong.glslv");
-const PHONG_FS: &'static [u8] = include_bytes!("../../gpu/phong.glslf");
+const PHONG_VS    : &'static [u8] = include_bytes!("../../gpu/phong.glslv");
+const PHONG_FS    : &'static [u8] = include_bytes!("../../gpu/phong.glslf");
+const PHONG_TEX_VS: &'static [u8] = include_bytes!("../../gpu/phong_tex.glslv");
+const PHONG_TEX_FS: &'static [u8] = include_bytes!("../../gpu/phong_tex.glslf");
 
 pub struct Technique<R: gfx::Resources> {
     program: gfx::ProgramHandle<R>,
+    program_textured: gfx::ProgramHandle<R>,
     state_add: gfx::DrawState,
     state_alpha: gfx::DrawState,
     state_opaque: gfx::DrawState,
@@ -38,7 +41,9 @@ pub struct Technique<R: gfx::Resources> {
 }
 
 impl<R: gfx::Resources> Technique<R> {
-    pub fn from_program(program: gfx::ProgramHandle<R>, tex_param: gfx::shade::TextureParam<R>)
+    pub fn from_program(program: gfx::ProgramHandle<R>,
+                        program_tex: gfx::ProgramHandle<R>,
+                        tex_param: gfx::shade::TextureParam<R>)
                         -> Technique<R> {
         let state = gfx::DrawState::new().depth(
             gfx::state::Comparison::LessEqual,
@@ -46,6 +51,7 @@ impl<R: gfx::Resources> Technique<R> {
         );
         Technique {
             program: program,
+            program_textured: program_tex,
             state_add: state.clone().blend(gfx::BlendPreset::Add),
             state_alpha: state.clone().blend(gfx::BlendPreset::Alpha),
             state_multiply: state.clone().blend(gfx::BlendPreset::Multiply),
@@ -57,33 +63,43 @@ impl<R: gfx::Resources> Technique<R> {
     pub fn new<F: gfx::Factory<R>>(factory: &mut F, tex_param: gfx::shade::TextureParam<R>)
                -> Result<Technique<R>, gfx::ProgramError> {
         use gfx::traits::FactoryExt;
-        factory.link_program(PHONG_VS, PHONG_FS)
-               .map(|p| Technique::from_program(p, tex_param))
+        let prog0 = try!(factory.link_program(PHONG_VS, PHONG_FS));
+        let prog1 = try!(factory.link_program(PHONG_TEX_VS, PHONG_TEX_FS));
+        Ok(Technique::from_program(prog0, prog1, tex_param))
     }
 }
 
-pub type Kernel = Option<gfx::BlendPreset>;
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct Kernel {
+    textured: bool,
+    blend: Option<gfx::BlendPreset>,
+}
 
 impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>> for Technique<R> {
     type Kernel = Kernel;
     type Params = Params<R>;
 
-    fn test(&self, _mesh: &gfx::Mesh<R>, mat: &::Material<R>) -> Option<Kernel> {
+    fn test(&self, mesh: &gfx::Mesh<R>, mat: &::Material<R>) -> Option<Kernel> {
         if !mat.visible {
             return None
         }
-        //if gfx::render::mesh::Link::new(mesh, self.program.get_info()).is_err() {
-        //    return None
-        //}
-        match mat.blend {
-            Some(gfx::BlendPreset::Invert) => None,
-            other => Some(other)
-        }
+        Some(Kernel {
+            textured: mat.texture.is_some() &&
+                mesh.attributes.iter().find(|a| a.name == "a_Tex0").is_some(),
+            blend: match mat.blend {
+               Some(gfx::BlendPreset::Invert) => return None,
+               other => other,
+            },
+        })
     }
 
     fn compile<'a>(&'a self, kernel: Kernel, _space: ::view::Info<f32>)
                    -> gfx_phase::TechResult<'a, R, Params<R>> {
-        (   &self.program,
+        (   if kernel.textured {
+                &self.program_textured
+            } else {
+                &self.program
+            },
             Params {
                 mvp: [[0.0; 4]; 4],
                 normal: [[0.0; 3]; 3],
@@ -91,7 +107,7 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
                 texture: self.default_texture_param.clone(),
             },
             None,
-            match kernel {
+            match kernel.blend {
                 Some(gfx::BlendPreset::Add) => &self.state_add,
                 Some(gfx::BlendPreset::Alpha) => &self.state_alpha,
                 Some(gfx::BlendPreset::Multiply) => &self.state_multiply,
@@ -105,6 +121,8 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
         params.mvp = *space.mx_vertex.as_fixed();
         params.normal = *space.mx_normal.as_fixed();
         params.color = mat.color;
-        params.texture = mat.texture.clone();
+        if let Some(ref tex) = mat.texture {
+            params.texture = tex.clone();
+        }
     }
 }

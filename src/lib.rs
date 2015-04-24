@@ -17,7 +17,7 @@ pub use gfx_scene::{Error, FailCount};
 pub struct Material<R: gfx::Resources> {
     pub visible: bool,
     pub color: gfx::ColorValue,
-    pub texture: gfx::shade::TextureParam<R>,
+    pub texture: Option<gfx::shade::TextureParam<R>>,
     pub blend: Option<gfx::BlendPreset>,
 }
 

@@ -8,7 +8,7 @@ pub fn order<S: PartialOrd, R: gfx::Resources>(
              a: &gfx_phase::Object<S, super::Kernel, super::Params<R>>,
              b: &gfx_phase::Object<S, super::Kernel, super::Params<R>>)
              -> Ordering {
-    match (a.kernel, b.kernel) {
+    match (a.kernel.blend, b.kernel.blend) {
         (None, None)        => a.cmp_depth(b),
         (None, Some(_))     => Ordering::Less,
         (Some(_), None)     => Ordering::Greater,
