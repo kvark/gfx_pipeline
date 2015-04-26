@@ -24,10 +24,8 @@ pub struct Material<R: gfx::Resources> {
 impl<R: gfx::Resources> gfx_phase::Material for Material<R> {}
 
 pub trait Pipeline<S, R: gfx::Resources, E> {
-    fn render<
+    fn render<A, T>(&mut self, &A, &A::Camera, &mut T)
+              -> Result<FailCount, Error> where
         A: gfx_scene::AbstractScene<R, ViewInfo = view::Info<S>, Entity = E>,
-        C: gfx::CommandBuffer<R>,
-        O: gfx::Output<R>,
-    >(  &mut self, &A, &mut gfx::Renderer<R, C>, &A::Camera, &O)
-        -> Result<FailCount, Error>;
+        T: gfx::Stream<R>;
 }

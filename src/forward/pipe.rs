@@ -33,28 +33,24 @@ impl<R: gfx::Resources, E> Pipeline<R, E> {
     }
 }
 
-impl<R: gfx::Resources, E: gfx_phase::Entity<R, ::Material<R>>> ::Pipeline<f32, R, E> for Pipeline<R, E> {
-    fn render<
+impl<
+    R: gfx::Resources,
+    E: gfx_phase::Entity<R, ::Material<R>>,
+> ::Pipeline<f32, R, E> for Pipeline<R, E> {
+    fn render<A, T>(&mut self, scene: &A, camera: &A::Camera, stream: &mut T)
+              -> Result<::FailCount, ::Error> where
         A: gfx_scene::AbstractScene<R, ViewInfo = ::view::Info<f32>, Entity = E>,
-        C: gfx::CommandBuffer<R>,
-        O: gfx::Output<R>,
-    >(  &mut self, scene: &A, renderer: &mut gfx::Renderer<R, C>,
-        camera: &A::Camera, output: &O) -> Result<::FailCount, ::Error>
+        T: gfx::Stream<R>,
     {
-        renderer.reset();
         // clear
-        match self.background {
-            Some(color) => {
-                let cdata = gfx::ClearData {
-                    color: color,
-                    depth: 1.0,
-                    stencil: 0,
-                };
-                renderer.clear(cdata, gfx::COLOR | gfx::DEPTH, output);
-            },
-            None => (),
+        if let Some(color) = self.background {
+            stream.clear(gfx::ClearData {
+                color: color,
+                depth: 1.0,
+                stencil: 0,
+            });
         }
         // draw
-        scene.draw(&mut self.phase, camera, output, renderer)
+        scene.draw(&mut self.phase, camera, stream)
     }
 }
