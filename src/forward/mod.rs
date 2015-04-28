@@ -5,11 +5,10 @@ mod pipe;
 
 pub use self::pipe::{order, Pipeline};
 
-pub type Phase<R, E> = gfx_phase::CachedPhase<R,
+pub type Phase<R> = gfx_phase::CachedPhase<R,
     ::Material<R>,
     ::view::Info<f32>,
     Technique<R>,
-    E,
 >;
 
 #[derive(Clone)]
@@ -106,7 +105,7 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
         })
     }
 
-    fn compile<'a>(&'a self, kernel: Kernel, _space: ::view::Info<f32>)
+    fn compile<'a>(&'a self, kernel: Kernel, _space: &::view::Info<f32>)
                    -> gfx_phase::TechResult<'a, R, Params<R>> {
         (   if kernel.textured {
                 &self.program_textured

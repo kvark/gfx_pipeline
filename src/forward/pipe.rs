@@ -16,14 +16,14 @@ pub fn order<S: PartialOrd, R: gfx::Resources>(
     }
 }
 
-pub struct Pipeline<R: gfx::Resources, E> {
-    pub phase: super::Phase<R, E>,
+pub struct Pipeline<R: gfx::Resources> {
+    pub phase: super::Phase<R>,
     pub background: Option<gfx::ColorValue>,
 }
 
-impl<R: gfx::Resources, E> Pipeline<R, E> {
+impl<R: gfx::Resources> Pipeline<R> {
     pub fn new<F: gfx::Factory<R>>(factory: &mut F)
-               -> Result<Pipeline<R, E>, super::Error> {
+               -> Result<Pipeline<R>, super::Error> {
         super::Technique::new(factory).map(|tech| Pipeline {
             phase: gfx_phase::Phase::new("Main", tech)
                                     .with_sort(order)
@@ -33,13 +33,10 @@ impl<R: gfx::Resources, E> Pipeline<R, E> {
     }
 }
 
-impl<
-    R: gfx::Resources,
-    E: gfx_phase::Entity<R, ::Material<R>>,
-> ::Pipeline<f32, R, E> for Pipeline<R, E> {
+impl<R: gfx::Resources> ::Pipeline<f32, R> for Pipeline<R> {
     fn render<A, T>(&mut self, scene: &A, camera: &A::Camera, stream: &mut T)
               -> Result<::FailCount, ::Error> where
-        A: gfx_scene::AbstractScene<R, ViewInfo = ::view::Info<f32>, Entity = E>,
+        A: gfx_scene::AbstractScene<R, ViewInfo = ::view::Info<f32>, Material = ::Material<R>>,
         T: gfx::Stream<R>,
     {
         // clear
