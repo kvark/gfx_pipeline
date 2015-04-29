@@ -23,9 +23,11 @@ pub struct Material<R: gfx::Resources> {
 
 impl<R: gfx::Resources> gfx_phase::Material for Material<R> {}
 
-pub trait Pipeline<S, R: gfx::Resources, E> {
+pub type CullEntity<'a, R> = gfx_scene::CullEntity<'a, R, Material<R>, view::Info<f32>>;
+
+pub trait Pipeline<S, R: gfx::Resources> {
     fn render<A, T>(&mut self, &A, &A::Camera, &mut T)
               -> Result<FailCount, Error> where
-        A: gfx_scene::AbstractScene<R, ViewInfo = view::Info<S>, Entity = E>,
+        A: gfx_scene::AbstractScene<R, ViewInfo = view::Info<S>, Material = Material<R>>,
         T: gfx::Stream<R>;
 }
