@@ -11,7 +11,7 @@ out vec3 v_Normal;
 out vec2 v_TexCoords;
 
 void main() {
-    gl_Position = u_Transform * vec4(a_Position, 1.0);
-    v_Normal = u_NormalRotation * a_Normal;
-    v_TexCoords = a_Tex0;
+	gl_Position = u_Transform * vec4(a_Position, 1.0);
+	v_Normal = u_NormalRotation * a_Normal;
+	v_TexCoords = a_Tex0;
 }

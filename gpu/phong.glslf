@@ -8,9 +8,9 @@ in vec3 v_Normal;
 out vec4 o_Color;
 
 void main() {
-    vec3 N = normalize(v_Normal);
-    vec3 L = normalize(c_LightPos);
-    float k_diffuse = max(0.0, dot(N, L));
-    vec3 diffuse_color = u_Color.xyz * k_diffuse;
-    o_Color = vec4(diffuse_color, u_Color.a);
+	vec3 N = normalize(v_Normal);
+	vec3 L = normalize(c_LightPos);
+	float k_diffuse = max(0.0, dot(N, L));
+	vec3 diffuse_color = u_Color.xyz * k_diffuse;
+	o_Color = vec4(diffuse_color, u_Color.a);
 }

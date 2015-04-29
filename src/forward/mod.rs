@@ -22,6 +22,8 @@ pub struct Params<R: gfx::Resources> {
     pub color: [f32; 4],
     #[name = "t_Diffuse"]
     pub texture: gfx::shade::TextureParam<R>,
+    #[name = "u_AlphaTest"]
+    pub alpha_test: f32,
 }
 
 const PHONG_VS    : &'static [u8] = include_bytes!("../../gpu/phong.glslv");
@@ -84,7 +86,7 @@ impl<R: gfx::Resources> Technique<R> {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Kernel {
     textured: bool,
-    blend: Option<gfx::BlendPreset>,
+    transparency: ::Transparency,
 }
 
 impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>> for Technique<R> {
@@ -92,21 +94,19 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
     type Params = Params<R>;
 
     fn test(&self, mesh: &gfx::Mesh<R>, mat: &::Material<R>) -> Option<Kernel> {
-        if !mat.visible {
+        if mat.transparency == ::Transparency::Blend(gfx::BlendPreset::Invert) {
             return None
         }
         Some(Kernel {
             textured: mat.texture.is_some() &&
                 mesh.attributes.iter().find(|a| a.name == "a_Tex0").is_some(),
-            blend: match mat.blend {
-               Some(gfx::BlendPreset::Invert) => return None,
-               other => other,
-            },
+            transparency: mat.transparency,
         })
     }
 
     fn compile<'a>(&'a self, kernel: Kernel, _space: &::view::Info<f32>)
                    -> gfx_phase::TechResult<'a, R, Params<R>> {
+        use ::Transparency::*;
         (   if kernel.textured {
                 &self.program_textured
             } else {
@@ -117,12 +117,15 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
                 normal: [[0.0; 3]; 3],
                 color: [0.0; 4],
                 texture: (self.default_texture.clone(), None),
+                alpha_test: if let Cutout(v) = kernel.transparency {
+                    v as f32 / 255 as f32
+                }else { 0.0 },
             },
             None,
-            match kernel.blend {
-                Some(gfx::BlendPreset::Add) => &self.state_add,
-                Some(gfx::BlendPreset::Alpha) => &self.state_alpha,
-                Some(gfx::BlendPreset::Multiply) => &self.state_multiply,
+            match kernel.transparency {
+                Blend(gfx::BlendPreset::Add)      => &self.state_add,
+                Blend(gfx::BlendPreset::Alpha)    => &self.state_alpha,
+                Blend(gfx::BlendPreset::Multiply) => &self.state_multiply,
                 _ => &self.state_opaque,
             }
         )

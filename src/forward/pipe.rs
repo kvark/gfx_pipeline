@@ -8,11 +8,12 @@ pub fn order<S: PartialOrd, R: gfx::Resources>(
              a: &gfx_phase::Object<S, super::Kernel, super::Params<R>>,
              b: &gfx_phase::Object<S, super::Kernel, super::Params<R>>)
              -> Ordering {
-    match (a.kernel.blend, b.kernel.blend) {
-        (None, None)        => a.cmp_depth(b),
-        (None, Some(_))     => Ordering::Less,
-        (Some(_), None)     => Ordering::Greater,
-        (Some(_), Some(_))  => b.cmp_depth(a),
+    use ::Transparency::*;
+    match (a.kernel.transparency, b.kernel.transparency) {
+        (Blend(_), Blend(_)) => b.cmp_depth(a),
+        (Blend(_), _)        => Ordering::Greater,
+        (_, Blend(_))        => Ordering::Less,
+        (_, _)               => a.cmp_depth(b),
     }
 }
 

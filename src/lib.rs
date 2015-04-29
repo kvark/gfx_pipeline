@@ -12,13 +12,18 @@ mod view;
 pub use self::view::Info as ViewInfo;
 pub use gfx_scene::{Error, FailCount};
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum Transparency {
+	Opaque,
+	Cutout(u8),
+	Blend(gfx::BlendPreset),
+}
 
 #[derive(Clone)]
 pub struct Material<R: gfx::Resources> {
-    pub visible: bool,
     pub color: gfx::ColorValue,
     pub texture: Option<gfx::shade::TextureParam<R>>,
-    pub blend: Option<gfx::BlendPreset>,
+    pub transparency: Transparency,
 }
 
 impl<R: gfx::Resources> gfx_phase::Material for Material<R> {}
