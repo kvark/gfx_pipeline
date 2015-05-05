@@ -10,7 +10,7 @@ pub mod forward;
 mod view;
 
 pub use self::view::Info as ViewInfo;
-pub use gfx_scene::{Error, FailCount};
+pub use gfx_scene::{Error, Report};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Transparency {
@@ -28,11 +28,9 @@ pub struct Material<R: gfx::Resources> {
 
 impl<R: gfx::Resources> gfx_phase::Material for Material<R> {}
 
-pub type CullEntity<'a, R> = gfx_scene::CullEntity<'a, R, Material<R>, view::Info<f32>>;
-
 pub trait Pipeline<S, R: gfx::Resources> {
     fn render<A, T>(&mut self, &A, &A::Camera, &mut T)
-              -> Result<FailCount, Error> where
+              -> Result<Report, Error> where
         A: gfx_scene::AbstractScene<R, ViewInfo = view::Info<S>, Material = Material<R>>,
         T: gfx::Stream<R>;
 }
