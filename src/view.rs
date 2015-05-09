@@ -21,11 +21,10 @@ impl<
     T: cgmath::CompositeTransform3<S, cgmath::Quaternion<S>>,
 > gfx_scene::ViewInfo<S, T> for Info<S> {
     fn new(mvp: cgmath::Matrix4<S>, view: T, _model: T) -> Info<S> {
-        use cgmath::ToMatrix3;
         let (_, rot, _) = view.decompose();
         Info {
             mx_vertex: mvp,
-            mx_normal: rot.to_matrix3(),
+            mx_normal: rot.into(),
         }
     }
 }

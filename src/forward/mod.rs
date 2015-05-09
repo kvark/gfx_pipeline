@@ -51,13 +51,13 @@ impl From<gfx::ProgramError> for Error {
 
 
 pub struct Technique<R: gfx::Resources> {
-    program: gfx::ProgramHandle<R>,
-    program_textured: gfx::ProgramHandle<R>,
+    program: gfx::handle::Program<R>,
+    program_textured: gfx::handle::Program<R>,
     state_add: gfx::DrawState,
     state_alpha: gfx::DrawState,
     state_opaque: gfx::DrawState,
     state_multiply: gfx::DrawState,
-    pub default_texture: gfx::TextureHandle<R>,
+    pub default_texture: gfx::handle::Texture<R>,
 }
 
 impl<R: gfx::Resources> Technique<R> {
