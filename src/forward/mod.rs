@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use gfx;
 use gfx_phase;
 
@@ -11,20 +12,13 @@ pub type Phase<R> = gfx_phase::CachedPhase<R,
     Technique<R>,
 >;
 
-#[derive(Clone)]
-#[shader_param]
-pub struct Params<R: gfx::Resources> {
-    #[name = "u_Transform"]
-    pub mvp: [[f32; 4]; 4],
-    #[name = "u_NormalRotation"]
-    pub normal: [[f32; 3]; 3],
-    #[name = "u_Color"]
-    pub color: [f32; 4],
-    #[name = "t_Diffuse"]
-    pub texture: gfx::shade::TextureParam<R>,
-    #[name = "u_AlphaTest"]
-    pub alpha_test: f32,
-}
+gfx_parameters!( Params/Link {
+    u_Transform@ mvp: [[f32; 4]; 4],
+    u_NormalRotation@ normal: [[f32; 3]; 3],
+    u_Color@ color: [f32; 4],
+    t_Diffuse@ texture: gfx::shade::TextureParam<R>,
+    u_AlphaTest@ alpha_test: f32,
+});
 
 const PHONG_VS    : &'static [u8] = include_bytes!("../../gpu/phong.glslv");
 const PHONG_FS    : &'static [u8] = include_bytes!("../../gpu/phong.glslf");
@@ -120,6 +114,7 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
                 alpha_test: if let Cutout(v) = kernel.transparency {
                     v as f32 / 255 as f32
                 }else { 0.0 },
+                _r: PhantomData,
             },
             None,
             match kernel.transparency {

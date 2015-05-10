@@ -1,7 +1,5 @@
-#![feature(custom_attribute, plugin)]
-#![plugin(gfx_macros)]
-
 extern crate cgmath;
+#[macro_use]
 extern crate gfx;
 extern crate gfx_phase;
 extern crate gfx_scene;
