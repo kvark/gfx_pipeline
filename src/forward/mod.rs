@@ -12,6 +12,8 @@ pub type Phase<R> = gfx_phase::CachedPhase<R,
     Technique<R>,
 >;
 
+pub type OrderFun<R> = gfx_phase::OrderFun<f32, Kernel, Params<R>>;
+
 gfx_parameters!( Params/Link {
     u_Transform@ mvp: [[f32; 4]; 4],
     u_NormalRotation@ normal: [[f32; 3]; 3],
