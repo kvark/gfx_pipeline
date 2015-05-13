@@ -1,3 +1,9 @@
+//! This is a classy "Forward" rendering pipeline.
+//! It supports all materials except for `Inverse` blending.
+//! It renders everything with a single pass, ordering opaque objects
+//! first front-to-back, and then blended ones back-to-front on top.
+//! TODO: apply actual lights in the shader. Currently hard-coded.
+
 use std::marker::PhantomData;
 use gfx;
 use gfx_phase;

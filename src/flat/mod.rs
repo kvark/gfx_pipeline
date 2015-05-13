@@ -1,3 +1,7 @@
+//! This is a simple "Flat" rendering pipeline.
+//! It doesn't support blended objects and uses front-to-back ordering.
+//! The pipeline is meant for simple applications and fall-back paths.
+
 use std::marker::PhantomData;
 use gfx;
 use gfx_phase;
