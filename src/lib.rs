@@ -4,16 +4,19 @@ extern crate gfx;
 extern crate gfx_phase;
 extern crate gfx_scene;
 
+pub mod flat;
 pub mod forward;
 mod view;
 
 pub use self::view::Info as ViewInfo;
 pub use gfx_scene::{Error, Report};
 
+pub type AlphaThreshold = u8;
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Transparency {
 	Opaque,
-	Cutout(u8),
+	Cutout(AlphaThreshold),
 	Blend(gfx::BlendPreset),
 }
 
