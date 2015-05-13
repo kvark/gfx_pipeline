@@ -35,8 +35,10 @@ impl<R: gfx::Resources> Pipeline<R> {
 }
 
 impl<R: gfx::Resources> ::Pipeline<f32, R> for Pipeline<R> {
+    type Success = gfx_scene::Report;
+
     fn render<A, T>(&mut self, scene: &A, camera: &A::Camera, stream: &mut T)
-              -> Result<::Report, ::Error> where
+              -> Result<gfx_scene::Report, gfx_scene::Error> where
         A: gfx_scene::AbstractScene<R, ViewInfo = ::view::Info<f32>, Material = ::Material<R>>,
         T: gfx::Stream<R>,
     {

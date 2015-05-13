@@ -27,8 +27,9 @@ pub struct Material<R: gfx::Resources> {
 impl<R: gfx::Resources> gfx_phase::Material for Material<R> {}
 
 pub trait Pipeline<S, R: gfx::Resources> {
+    type Success;
     fn render<A, T>(&mut self, &A, &A::Camera, &mut T)
-              -> Result<Report, Error> where
+              -> Result<Self::Success, Error> where
         A: gfx_scene::AbstractScene<R, ViewInfo = view::Info<S>, Material = Material<R>>,
         T: gfx::Stream<R>;
 }
