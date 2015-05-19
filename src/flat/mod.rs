@@ -14,7 +14,7 @@ pub type Phase<R> = gfx_phase::CachedPhase<R,
     Technique<R>,
 >;
 
-gfx_parameters!( Params/Link {
+gfx_parameters!( Params {
     u_Transform@ mvp: [[f32; 4]; 4],
     u_Color@ color: [f32; 4],
     t_Diffuse@ texture: gfx::shade::TextureParam<R>,
