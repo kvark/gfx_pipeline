@@ -12,11 +12,11 @@ authors = [
 name = "gfx_pipeline"
 
 [dependencies.gfx_phase]
-git = "https://github.com/kvark/gfx_scene"
+git = "https://github.com/gfx-rs/gfx_scene"
 version = "*"
 
 [dependencies.gfx_scene]
-git = "https://github.com/kvark/gfx_scene"
+git = "https://github.com/gfx-rs/gfx_scene"
 version = "*"
 
 [dependencies.gfx]
