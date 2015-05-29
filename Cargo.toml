@@ -1,28 +1,17 @@
 [package]
 name = "gfx_pipeline"
-version = "0.1.1"
+version = "0.2.0"
 description = "Standard materials and rendering pipelines for gfx_scene"
+homepage = "https://github.com/gfx-rs/gfx_pipeline"
 license = "Apache-2.0"
 keywords = ["graphics", "gamedev"]
-authors = [
-"Dzmitry Malyshau <kvarkus@gmail.com>",
-]
+authors = ["The Gfx-rs Developers"]
 
 [lib]
 name = "gfx_pipeline"
 
-[dependencies.gfx_phase]
-git = "https://github.com/gfx-rs/gfx_scene"
-version = "*"
-
-[dependencies.gfx_scene]
-git = "https://github.com/gfx-rs/gfx_scene"
-version = "*"
-
-[dependencies.gfx]
-git = "https://github.com/gfx-rs/gfx-rs"
-version = "*"
-
-[dependencies.cgmath]
-git = "https://github.com/bjz/cgmath-rs"
-version = "*"
+[dependencies]
+cgmath = "*"
+gfx = "0.6.*"
+gfx_phase = "0.2.*"
+gfx_scene = "0.2.*"
