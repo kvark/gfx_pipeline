@@ -21,14 +21,26 @@ pub type Phase<R> = gfx_phase::CachedPhase<R,
 
 mod param {
     #![allow(missing_docs)]
+    use cgmath::Vector4;
     use gfx::shade::TextureParam;
+    use gfx::handle::Buffer;
+
+    #[derive(Debug, Clone)]
+    struct Light {
+        position: Vector4<f32>,
+        color: Vector4<f32>,
+        attenuation: Vector4<f32>,
+    }
 
     gfx_parameters!( Struct {
         u_Transform@ mvp: [[f32; 4]; 4],
+        u_WorldTransform@ world: [[f32; 4]; 4],
         u_NormalRotation@ normal: [[f32; 3]; 3],
         u_Color@ color: [f32; 4],
+        u_Ambient@ ambient: [f32; 4],
         t_Diffuse@ texture: TextureParam<R>,
         u_AlphaTest@ alpha_test: f32,
+        b_Lights@ lights: Buffer<R, Light>,
     });
 }
 
@@ -70,8 +82,11 @@ pub struct Technique<R: gfx::Resources> {
     state_alpha: gfx::DrawState,
     state_opaque: gfx::DrawState,
     state_multiply: gfx::DrawState,
+    light_buf: gfx::handle::Buffer<R, param::Light>,
     /// The default texture used for materials that don't have it.
     pub default_texture: gfx::handle::Texture<R>,
+    /// The light color of non-lit areas.
+    pub ambient_color: gfx::ColorValue,
 }
 
 impl<R: gfx::Resources> Technique<R> {
@@ -93,7 +108,9 @@ impl<R: gfx::Resources> Technique<R> {
             state_alpha: state.clone().blend(gfx::BlendPreset::Alpha),
             state_multiply: state.clone().blend(gfx::BlendPreset::Multiply),
             state_opaque: state,
+            light_buf: factory.create_buffer_dynamic(8, gfx::BufferRole::Uniform),
             default_texture: texture,
+            ambient_color: [0.1, 0.1, 0.1, 0.0],
         })
     }
 }
@@ -130,12 +147,15 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
             },
             param::Struct {
                 mvp: [[0.0; 4]; 4],
+                world: [[0.0; 4]; 4],
                 normal: [[0.0; 3]; 3],
                 color: [0.0; 4],
+                ambient: self.ambient_color,
                 texture: (self.default_texture.clone(), None),
                 alpha_test: if let Cutout(v) = kernel.transparency {
                     v as f32 / 255 as f32
                 }else { 0.0 },
+                lights: self.light_block.clone(),
                 _r: PhantomData,
             },
             None,
