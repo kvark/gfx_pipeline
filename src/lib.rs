@@ -6,8 +6,10 @@ extern crate gfx_scene;
 
 pub mod flat;
 pub mod forward;
+mod light;
 mod view;
 
+pub use self::light::PointSource as Light;
 pub use self::view::Info as ViewInfo;
 pub use gfx_scene::{Error, Report};
 
