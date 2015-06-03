@@ -7,7 +7,7 @@ use gfx;
 use gfx_phase;
 use gfx_scene;
 
-
+/// A short typedef for a phase short.
 pub type Phase<R> = gfx_phase::CachedPhase<R,
     ::Material<R>,
     ::view::Info<f32>,
@@ -26,9 +26,12 @@ const PHONG_FS    : &'static [u8] = include_bytes!("../../gpu/phong.glslf");
 const PHONG_TEX_VS: &'static [u8] = include_bytes!("../../gpu/phong_tex.glslv");
 const PHONG_TEX_FS: &'static [u8] = include_bytes!("../../gpu/phong_tex.glslf");
 
+/// Pipeline creation error.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Error {
+    /// Failed to create a texture.
     Texture(gfx::tex::TextureError),
+    /// Failed to link a program.
     Program(gfx::ProgramError),
 }
 
@@ -45,14 +48,17 @@ impl From<gfx::ProgramError> for Error {
 }
 
 
+/// The core technique of the pipeline.
 pub struct Technique<R: gfx::Resources> {
     program: gfx::handle::Program<R>,
     program_textured: gfx::handle::Program<R>,
     state: gfx::DrawState,
+    /// The default texture used for materials that don't have it.
     pub default_texture: gfx::handle::Texture<R>,
 }
 
 impl<R: gfx::Resources> Technique<R> {
+    /// Create a new technique.
     pub fn new<F: gfx::Factory<R>>(factory: &mut F)
                -> Result<Technique<R>, Error> {
         use gfx::traits::FactoryExt;
@@ -65,6 +71,7 @@ impl<R: gfx::Resources> Technique<R> {
     }
 }
 
+#[allow(missing_docs)]
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Kernel {
     Flat,
@@ -118,13 +125,16 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
     }
 }
 
-
+/// The flat pipeline.
 pub struct Pipeline<R: gfx::Resources> {
+    /// The only rendering phase.
     pub phase: Phase<R>,
+    /// Background color. Set to none if you don't want the screen to be cleared.
     pub background: Option<gfx::ColorValue>,
 }
 
 impl<R: gfx::Resources> Pipeline<R> {
+    /// Create a new pipeline.
     pub fn new<F: gfx::Factory<R>>(factory: &mut F)
                -> Result<Pipeline<R>, Error> {
         Technique::new(factory).map(|tech| Pipeline {
