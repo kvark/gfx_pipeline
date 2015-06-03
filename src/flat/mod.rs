@@ -7,28 +7,36 @@ use gfx;
 use gfx_phase;
 use gfx_scene;
 
-
+/// A short typedef for the phase.
 pub type Phase<R> = gfx_phase::CachedPhase<R,
     ::Material<R>,
     ::view::Info<f32>,
     Technique<R>,
 >;
 
-gfx_parameters!( Params {
-    u_Transform@ mvp: [[f32; 4]; 4],
-    u_Color@ color: [f32; 4],
-    t_Diffuse@ texture: gfx::shade::TextureParam<R>,
-    u_AlphaTest@ alpha_test: f32,
-});
+mod param {
+    #![allow(missing_docs)]
+    use gfx::shade::TextureParam;
 
-const PHONG_VS    : &'static [u8] = include_bytes!("../../gpu/phong.glslv");
-const PHONG_FS    : &'static [u8] = include_bytes!("../../gpu/phong.glslf");
-const PHONG_TEX_VS: &'static [u8] = include_bytes!("../../gpu/phong_tex.glslv");
-const PHONG_TEX_FS: &'static [u8] = include_bytes!("../../gpu/phong_tex.glslf");
+    gfx_parameters!( Struct {
+        u_Transform@ mvp: [[f32; 4]; 4],
+        u_Color@ color: [f32; 4],
+        t_Diffuse@ texture: TextureParam<R>,
+        u_AlphaTest@ alpha_test: f32,
+    });
+}
 
+const FLAT_VS    : &'static [u8] = include_bytes!("../../gpu/flat.glslv");
+const FLAT_FS    : &'static [u8] = include_bytes!("../../gpu/flat.glslf");
+const FLAT_TEX_VS: &'static [u8] = include_bytes!("../../gpu/flat_tex.glslv");
+const FLAT_TEX_FS: &'static [u8] = include_bytes!("../../gpu/flat_tex.glslf");
+
+/// Pipeline creation error.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Error {
+    /// Failed to create a texture.
     Texture(gfx::tex::TextureError),
+    /// Failed to link a program.
     Program(gfx::ProgramError),
 }
 
@@ -45,26 +53,30 @@ impl From<gfx::ProgramError> for Error {
 }
 
 
+/// The core technique of the pipeline.
 pub struct Technique<R: gfx::Resources> {
     program: gfx::handle::Program<R>,
     program_textured: gfx::handle::Program<R>,
     state: gfx::DrawState,
+    /// The default texture used for materials that don't have it.
     pub default_texture: gfx::handle::Texture<R>,
 }
 
 impl<R: gfx::Resources> Technique<R> {
+    /// Create a new technique.
     pub fn new<F: gfx::Factory<R>>(factory: &mut F)
                -> Result<Technique<R>, Error> {
         use gfx::traits::FactoryExt;
         Ok(Technique {
-            program: try!(factory.link_program(PHONG_VS, PHONG_FS)),
-            program_textured: try!(factory.link_program(PHONG_TEX_VS, PHONG_TEX_FS)),
+            program: try!(factory.link_program(FLAT_VS, FLAT_FS)),
+            program_textured: try!(factory.link_program(FLAT_TEX_VS, FLAT_TEX_FS)),
             state: gfx::DrawState::new().depth(gfx::state::Comparison::LessEqual, true),
             default_texture: try!(factory.create_texture_rgba8_static(1, 1, &[0xFFFFFFFF])),
         })
     }
 }
 
+#[allow(missing_docs)]
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Kernel {
     Flat,
@@ -74,7 +86,7 @@ pub enum Kernel {
 
 impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>> for Technique<R> {
     type Kernel = Kernel;
-    type Params = Params<R>;
+    type Params = param::Struct<R>;
 
     fn test(&self, mesh: &gfx::Mesh<R>, mat: &::Material<R>) -> Option<Kernel> {
         let textured = mat.texture.is_some() &&
@@ -88,13 +100,13 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
     }
 
     fn compile<'a>(&'a self, kernel: Kernel, _space: &::view::Info<f32>)
-                   -> gfx_phase::TechResult<'a, R, Params<R>> {
+                   -> gfx_phase::TechResult<'a, R, param::Struct<R>> {
         (   if kernel != Kernel::Flat {
                 &self.program_textured
             } else {
                 &self.program
             },
-            Params {
+            param::Struct {
                 mvp: [[0.0; 4]; 4],
                 color: [0.0; 4],
                 texture: (self.default_texture.clone(), None),
@@ -108,7 +120,8 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
         )
     }
 
-    fn fix_params(&self, mat: &::Material<R>, space: &::view::Info<f32>, params: &mut Params<R>) {
+    fn fix_params(&self, mat: &::Material<R>, space: &::view::Info<f32>,
+                  params: &mut param::Struct<R>) {
         use cgmath::FixedArray;
         params.mvp = *space.mx_vertex.as_fixed();
         params.color = mat.color;
@@ -118,13 +131,16 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
     }
 }
 
-
+/// The flat pipeline.
 pub struct Pipeline<R: gfx::Resources> {
+    /// The only rendering phase.
     pub phase: Phase<R>,
+    /// Background color. Set to none if you don't want the screen to be cleared.
     pub background: Option<gfx::ColorValue>,
 }
 
 impl<R: gfx::Resources> Pipeline<R> {
+    /// Create a new pipeline.
     pub fn new<F: gfx::Factory<R>>(factory: &mut F)
                -> Result<Pipeline<R>, Error> {
         Technique::new(factory).map(|tech| Pipeline {

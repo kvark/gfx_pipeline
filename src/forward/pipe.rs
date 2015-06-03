@@ -4,9 +4,12 @@ use gfx_scene;
 use std::cmp::Ordering;
 
 
+/// Custom ordering function to draw opaque objects first in a
+/// front-to-back order, and transparent objects on top in a
+/// back-to-front order.
 pub fn order<S: PartialOrd, R: gfx::Resources>(
-             a: &gfx_phase::Object<S, super::Kernel, super::Params<R>>,
-             b: &gfx_phase::Object<S, super::Kernel, super::Params<R>>)
+             a: &gfx_phase::Object<S, super::Kernel, super::param::Struct<R>>,
+             b: &gfx_phase::Object<S, super::Kernel, super::param::Struct<R>>)
              -> Ordering {
     use ::Transparency::*;
     match (a.kernel.transparency, b.kernel.transparency) {
@@ -17,12 +20,16 @@ pub fn order<S: PartialOrd, R: gfx::Resources>(
     }
 }
 
+/// The foreard rendering pipeline.
 pub struct Pipeline<R: gfx::Resources> {
+    /// The only rendering phase.
     pub phase: super::Phase<R>,
+    /// Background color. Set to none if you don't want the screen to be cleared.
     pub background: Option<gfx::ColorValue>,
 }
 
 impl<R: gfx::Resources> Pipeline<R> {
+    /// Create a new pipeline.
     pub fn new<F: gfx::Factory<R>>(factory: &mut F)
                -> Result<Pipeline<R>, super::Error> {
         super::Technique::new(factory).map(|tech| Pipeline {

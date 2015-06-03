@@ -2,9 +2,12 @@ use cgmath;
 use gfx_phase;
 use gfx_scene;
 
+/// Standard view information for an object.
 #[derive(Clone, Copy)]
 pub struct Info<S> {
+    /// Vertex transformation.
     pub mx_vertex: cgmath::Matrix4<S>,
+    /// Normal transformation.
     pub mx_normal: cgmath::Matrix3<S>,
 }
 
