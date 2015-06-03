@@ -1,4 +1,6 @@
-#![forbid(missing_docs)]
+//! Standard rendering pipelines and materials for gfx_scene.
+
+#![deny(missing_docs)]
 
 extern crate cgmath;
 #[macro_use]

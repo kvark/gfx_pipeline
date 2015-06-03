@@ -7,19 +7,24 @@ use gfx;
 use gfx_phase;
 use gfx_scene;
 
-/// A short typedef for a phase short.
+/// A short typedef for the phase.
 pub type Phase<R> = gfx_phase::CachedPhase<R,
     ::Material<R>,
     ::view::Info<f32>,
     Technique<R>,
 >;
 
-gfx_parameters!( Params {
-    u_Transform@ mvp: [[f32; 4]; 4],
-    u_Color@ color: [f32; 4],
-    t_Diffuse@ texture: gfx::shade::TextureParam<R>,
-    u_AlphaTest@ alpha_test: f32,
-});
+mod param {
+    #![allow(missing_docs)]
+    use gfx::shade::TextureParam;
+
+    gfx_parameters!( Struct {
+        u_Transform@ mvp: [[f32; 4]; 4],
+        u_Color@ color: [f32; 4],
+        t_Diffuse@ texture: TextureParam<R>,
+        u_AlphaTest@ alpha_test: f32,
+    });
+}
 
 const PHONG_VS    : &'static [u8] = include_bytes!("../../gpu/phong.glslv");
 const PHONG_FS    : &'static [u8] = include_bytes!("../../gpu/phong.glslf");
@@ -81,7 +86,7 @@ pub enum Kernel {
 
 impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>> for Technique<R> {
     type Kernel = Kernel;
-    type Params = Params<R>;
+    type Params = param::Struct<R>;
 
     fn test(&self, mesh: &gfx::Mesh<R>, mat: &::Material<R>) -> Option<Kernel> {
         let textured = mat.texture.is_some() &&
@@ -95,13 +100,13 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
     }
 
     fn compile<'a>(&'a self, kernel: Kernel, _space: &::view::Info<f32>)
-                   -> gfx_phase::TechResult<'a, R, Params<R>> {
+                   -> gfx_phase::TechResult<'a, R, param::Struct<R>> {
         (   if kernel != Kernel::Flat {
                 &self.program_textured
             } else {
                 &self.program
             },
-            Params {
+            param::Struct {
                 mvp: [[0.0; 4]; 4],
                 color: [0.0; 4],
                 texture: (self.default_texture.clone(), None),
@@ -115,7 +120,8 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
         )
     }
 
-    fn fix_params(&self, mat: &::Material<R>, space: &::view::Info<f32>, params: &mut Params<R>) {
+    fn fix_params(&self, mat: &::Material<R>, space: &::view::Info<f32>,
+                  params: &mut param::Struct<R>) {
         use cgmath::FixedArray;
         params.mvp = *space.mx_vertex.as_fixed();
         params.color = mat.color;

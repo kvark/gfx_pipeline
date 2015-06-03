@@ -12,30 +12,40 @@ mod pipe;
 
 pub use self::pipe::{order, Pipeline};
 
+/// A short typedef for the phase.
 pub type Phase<R> = gfx_phase::CachedPhase<R,
     ::Material<R>,
     ::view::Info<f32>,
     Technique<R>,
 >;
 
-pub type OrderFun<R> = gfx_phase::OrderFun<f32, Kernel, Params<R>>;
+mod param {
+    #![allow(missing_docs)]
+    use gfx::shade::TextureParam;
 
-gfx_parameters!( Params {
-    u_Transform@ mvp: [[f32; 4]; 4],
-    u_NormalRotation@ normal: [[f32; 3]; 3],
-    u_Color@ color: [f32; 4],
-    t_Diffuse@ texture: gfx::shade::TextureParam<R>,
-    u_AlphaTest@ alpha_test: f32,
-});
+    gfx_parameters!( Struct {
+        u_Transform@ mvp: [[f32; 4]; 4],
+        u_NormalRotation@ normal: [[f32; 3]; 3],
+        u_Color@ color: [f32; 4],
+        t_Diffuse@ texture: TextureParam<R>,
+        u_AlphaTest@ alpha_test: f32,
+    });
+}
+
+/// Typedef for the ordering function.
+pub type OrderFun<R> = gfx_phase::OrderFun<f32, Kernel, param::Struct<R>>;
 
 const PHONG_VS    : &'static [u8] = include_bytes!("../../gpu/phong.glslv");
 const PHONG_FS    : &'static [u8] = include_bytes!("../../gpu/phong.glslf");
 const PHONG_TEX_VS: &'static [u8] = include_bytes!("../../gpu/phong_tex.glslv");
 const PHONG_TEX_FS: &'static [u8] = include_bytes!("../../gpu/phong_tex.glslf");
 
+/// Pipeline creation error.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Error {
+    /// Failed to create a texture.
     Texture(gfx::tex::TextureError),
+    /// Failed to link a program.
     Program(gfx::ProgramError),
 }
 
@@ -52,6 +62,7 @@ impl From<gfx::ProgramError> for Error {
 }
 
 
+/// The core technique of the pipeline.
 pub struct Technique<R: gfx::Resources> {
     program: gfx::handle::Program<R>,
     program_textured: gfx::handle::Program<R>,
@@ -59,10 +70,12 @@ pub struct Technique<R: gfx::Resources> {
     state_alpha: gfx::DrawState,
     state_opaque: gfx::DrawState,
     state_multiply: gfx::DrawState,
+    /// The default texture used for materials that don't have it.
     pub default_texture: gfx::handle::Texture<R>,
 }
 
 impl<R: gfx::Resources> Technique<R> {
+    /// Create a new technique.
     pub fn new<F: gfx::Factory<R>>(factory: &mut F)
                -> Result<Technique<R>, Error> {
         use gfx::traits::FactoryExt;
@@ -85,6 +98,7 @@ impl<R: gfx::Resources> Technique<R> {
     }
 }
 
+/// Kernel of the technique, defining what program needs to be used.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Kernel {
     textured: bool,
@@ -93,7 +107,7 @@ pub struct Kernel {
 
 impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>> for Technique<R> {
     type Kernel = Kernel;
-    type Params = Params<R>;
+    type Params = param::Struct<R>;
 
     fn test(&self, mesh: &gfx::Mesh<R>, mat: &::Material<R>) -> Option<Kernel> {
         if mat.transparency == ::Transparency::Blend(gfx::BlendPreset::Invert) {
@@ -107,14 +121,14 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
     }
 
     fn compile<'a>(&'a self, kernel: Kernel, _space: &::view::Info<f32>)
-                   -> gfx_phase::TechResult<'a, R, Params<R>> {
+                   -> gfx_phase::TechResult<'a, R, param::Struct<R>> {
         use ::Transparency::*;
         (   if kernel.textured {
                 &self.program_textured
             } else {
                 &self.program
             },
-            Params {
+            param::Struct {
                 mvp: [[0.0; 4]; 4],
                 normal: [[0.0; 3]; 3],
                 color: [0.0; 4],
@@ -134,7 +148,8 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
         )
     }
 
-    fn fix_params(&self, mat: &::Material<R>, space: &::view::Info<f32>, params: &mut Params<R>) {
+    fn fix_params(&self, mat: &::Material<R>, space: &::view::Info<f32>,
+                  params: &mut param::Struct<R>) {
         use cgmath::FixedArray;
         params.mvp = *space.mx_vertex.as_fixed();
         params.normal = *space.mx_normal.as_fixed();
