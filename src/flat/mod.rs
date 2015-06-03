@@ -26,10 +26,10 @@ mod param {
     });
 }
 
-const PHONG_VS    : &'static [u8] = include_bytes!("../../gpu/phong.glslv");
-const PHONG_FS    : &'static [u8] = include_bytes!("../../gpu/phong.glslf");
-const PHONG_TEX_VS: &'static [u8] = include_bytes!("../../gpu/phong_tex.glslv");
-const PHONG_TEX_FS: &'static [u8] = include_bytes!("../../gpu/phong_tex.glslf");
+const FLAT_VS    : &'static [u8] = include_bytes!("../../gpu/flat.glslv");
+const FLAT_FS    : &'static [u8] = include_bytes!("../../gpu/flat.glslf");
+const FLAT_TEX_VS: &'static [u8] = include_bytes!("../../gpu/flat_tex.glslv");
+const FLAT_TEX_FS: &'static [u8] = include_bytes!("../../gpu/flat_tex.glslf");
 
 /// Pipeline creation error.
 #[derive(Clone, Debug, PartialEq)]
@@ -68,8 +68,8 @@ impl<R: gfx::Resources> Technique<R> {
                -> Result<Technique<R>, Error> {
         use gfx::traits::FactoryExt;
         Ok(Technique {
-            program: try!(factory.link_program(PHONG_VS, PHONG_FS)),
-            program_textured: try!(factory.link_program(PHONG_TEX_VS, PHONG_TEX_FS)),
+            program: try!(factory.link_program(FLAT_VS, FLAT_FS)),
+            program_textured: try!(factory.link_program(FLAT_TEX_VS, FLAT_TEX_FS)),
             state: gfx::DrawState::new().depth(gfx::state::Comparison::LessEqual, true),
             default_texture: try!(factory.create_texture_rgba8_static(1, 1, &[0xFFFFFFFF])),
         })
