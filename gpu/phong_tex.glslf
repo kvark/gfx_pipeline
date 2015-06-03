@@ -1,6 +1,6 @@
 #version 150 core
 
-const int MAX_LIGHTS = 8;
+const int MAX_LIGHTS = 32;
 
 struct Light {
 	position: vec4,

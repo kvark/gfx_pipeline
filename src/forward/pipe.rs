@@ -47,6 +47,8 @@ impl<R: gfx::Resources> ::Pipeline<f32, R> for Pipeline<R> {
         A: gfx_scene::AbstractScene<R, ViewInfo = ::view::Info<f32>, Material = ::Material<R>>,
         T: gfx::Stream<R>,
     {
+        // prepare
+        self.phase.technique.update(stream);
         // clear
         if let Some(color) = self.background {
             stream.clear(gfx::ClearData {
