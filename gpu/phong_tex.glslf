@@ -1,6 +1,6 @@
 #version 150 core
 
-const int MAX_LIGHTS = 32;
+const int MAX_LIGHTS = 256;
 
 struct Light {
 	position: vec4,
@@ -12,7 +12,7 @@ uniform b_Lights {
 	Light u_Lights[MAX_LIGHTS];
 };
 
-uniform int u_NumLights;
+uniform uint4 u_LightMask;
 uniform sampler2D t_Diffuse;
 uniform vec4 u_Color;
 uniform vec4 u_Ambient;
@@ -33,12 +33,15 @@ void main() {
 	vec3 N = normalize(v_Normal);
 	vec3 diffuse_color = u_Ambient;
 
-	for (int i=0; i<min(u_NumLights, MAX_LIGHTS); ++i) {
-		Light light = u_Lights[i];
+	while (u_LightMask != 0) {
+		Light light = u_Lights[u_LightMask.x & 0xFF];
+		// evaluate diffuse contribution
 		vec3 L = normalize(light.pos.xyz - v_Position * light.pos.w);
 		float k_diffuse = max(0.0, dot(N, L));
 		diffuse_color += k_diffuse * light.color.xyz;
-		//TODO: attenuation
+		// attenuation (TODO)
+		// rotate the light mask
+		u_LightMask = (u_LightMask >> 8) | float4(u_LightMask.yzw<<24, 0);
 	}
 
 	o_Color = vec4(diffuse_color * mat_color.xyz, mat_color.w);

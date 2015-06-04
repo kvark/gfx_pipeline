@@ -25,10 +25,10 @@ mod param {
     use gfx::handle::Buffer;
 
     #[derive(Debug, Clone, Copy)]
-    struct Light {
-        position: [f32; 4],
-        color: [f32; 4],
-        attenuation: [f32; 4],
+    pub struct Light {
+        pub position: [f32; 4],
+        pub color: [f32; 4],
+        pub attenuation: [f32; 4],
     }
 
     gfx_parameters!( Struct {
@@ -39,7 +39,7 @@ mod param {
         u_Ambient@ ambient: [f32; 4],
         t_Diffuse@ texture: TextureParam<R>,
         u_AlphaTest@ alpha_test: f32,
-        u_NumLights@ num_lights: i32,
+        u_LightMask@ light_mask: [i32; 4], //TODO: u32
         b_Lights@ lights: Buffer<R, Light>,
     });
 }
@@ -47,6 +47,7 @@ mod param {
 /// Typedef for the ordering function.
 pub type OrderFun<R> = gfx_phase::OrderFun<f32, Kernel, param::Struct<R>>;
 
+const MAX_LIGHTS: usize = 256; // must be in sync with the shaders
 const PHONG_VS    : &'static [u8] = include_bytes!("../../gpu/phong.glslv");
 const PHONG_FS    : &'static [u8] = include_bytes!("../../gpu/phong.glslf");
 const PHONG_TEX_VS: &'static [u8] = include_bytes!("../../gpu/phong_tex.glslv");
@@ -110,7 +111,7 @@ impl<R: gfx::Resources> Technique<R> {
             state_alpha: state.clone().blend(gfx::BlendPreset::Alpha),
             state_multiply: state.clone().blend(gfx::BlendPreset::Multiply),
             state_opaque: state,
-            light_buf: factory.create_buffer_dynamic(32, gfx::BufferRole::Uniform),
+            light_buf: factory.create_buffer_dynamic(MAX_LIGHTS, gfx::BufferRole::Uniform),
             default_texture: texture,
             ambient_color: [0.1, 0.1, 0.1, 0.0],
             lights: Vec::new(),
@@ -126,7 +127,7 @@ impl<R: gfx::Resources> Technique<R> {
                 color: lit.color,
                 attenuation: [0.0; 4],
             };
-            stream.access().0.update_buffer(self.light_buf.raw(), &[par], i).unwrap()
+            stream.access().0.update_buffer(self.light_buf.raw(), &[par], i+1).unwrap()
         }
     }
 }
@@ -171,7 +172,7 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
                 alpha_test: if let Cutout(v) = kernel.transparency {
                     v as f32 / 255 as f32
                 }else { 0.0 },
-                num_lights: 0,
+                light_mask: [0; 4],
                 lights: self.light_buf.clone(),
                 _r: PhantomData,
             },
@@ -194,11 +195,17 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
         params.normal = *space.mx_normal.as_fixed();
         params.color = mat.color;
         params.ambient = self.ambient_color;
-        params.num_lights = self.lights.len() as i32;
 
-        for (i, lit) in self.lights.iter().enumerate() {
-            //TODO: figure out the active mask
-        }
+        params.light_mask = self.lights.iter().enumerate().fold(
+            (0, 0, [0; 4]), |(mut bit, element, mut mask), (i, lit)| {
+                //TODO: frustum intersect with entity
+                if lit.active {
+                    mask[element] |= ((i + 1) as i32) << bit;
+                    bit += 8;
+                    (bit & 0x1F, element + (bit >> 5), mask)
+                } else { (bit, element, mask) }
+            }
+        ).2;
 
         if let Some(ref tex) = mat.texture {
             params.texture = tex.clone();
