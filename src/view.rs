@@ -5,9 +5,11 @@ use gfx_scene;
 /// Standard view information for an object.
 #[derive(Clone, Copy)]
 pub struct Info<S> {
-    /// Vertex transformation.
+    /// Vertex -> clip transform.
     pub mx_vertex: cgmath::Matrix4<S>,
-    /// Normal transformation.
+    /// Vertex -> world transform.
+    pub mx_world: cgmath::Matrix4<S>,
+    /// Normal -> world transform.
     pub mx_normal: cgmath::Matrix3<S>,
 }
 
@@ -23,10 +25,11 @@ impl<
     //R: cgmath::Rotation3<S>,
     T: cgmath::CompositeTransform3<S, cgmath::Quaternion<S>>,
 > gfx_scene::ViewInfo<S, T> for Info<S> {
-    fn new(mvp: cgmath::Matrix4<S>, view: T, _model: T) -> Info<S> {
+    fn new(mvp: cgmath::Matrix4<S>, view: T, model: T) -> Info<S> {
         let (_, rot, _) = view.decompose();
         Info {
             mx_vertex: mvp,
+            mx_world: model.into(),
             mx_normal: rot.into(),
         }
     }

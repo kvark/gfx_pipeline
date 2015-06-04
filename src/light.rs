@@ -2,22 +2,24 @@ use gfx;
 use cgmath;
 
 /// A point light source.
-#[derive(Clone)]
-pub struct PointSource<S> {
+#[derive(Clone, Debug, PartialEq)]
+pub struct PointSource<S: cgmath::BaseNum> {
+    /// Boolean flag to enable/disable the light.
+    pub active: bool,
     /// Kind of the light.
     pub kind: Kind,
     /// Color.
     pub color: gfx::ColorValue,
     /// Attenuation type.
     pub attenuation: Attenuation<S>,
-    /// World position.
-    pub position: cgmath::Vector3<S>,
+    /// Homogeneous world position.
+    pub position: cgmath::Vector4<S>,
     /// View transformation.
     pub view: cgmath::Matrix4<S>,
 }
 
 /// Attenuation type of the light.
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Attenuation<S> {
     /// No attenuation with distance.
     Constant {
@@ -43,7 +45,7 @@ pub enum Attenuation<S> {
 }
 
 /// Kind of the light source.
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Kind {
     /// Omni-directional light.
     Omni,

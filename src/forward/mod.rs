@@ -22,19 +22,32 @@ pub type Phase<R> = gfx_phase::CachedPhase<R,
 mod param {
     #![allow(missing_docs)]
     use gfx::shade::TextureParam;
+    use gfx::handle::Buffer;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct Light {
+        pub position: [f32; 4],
+        pub color: [f32; 4],
+        pub attenuation: [f32; 4],
+    }
 
     gfx_parameters!( Struct {
         u_Transform@ mvp: [[f32; 4]; 4],
+        u_WorldTransform@ world: [[f32; 4]; 4],
         u_NormalRotation@ normal: [[f32; 3]; 3],
         u_Color@ color: [f32; 4],
+        u_Ambient@ ambient: [f32; 4],
         t_Diffuse@ texture: TextureParam<R>,
         u_AlphaTest@ alpha_test: f32,
+        u_LightMask@ light_mask: [i32; 4], //TODO: u32
+        b_Lights@ lights: Buffer<R, Light>,
     });
 }
 
 /// Typedef for the ordering function.
 pub type OrderFun<R> = gfx_phase::OrderFun<f32, Kernel, param::Struct<R>>;
 
+const MAX_LIGHTS: usize = 256; // must be in sync with the shaders
 const PHONG_VS    : &'static [u8] = include_bytes!("../../gpu/phong.glslv");
 const PHONG_FS    : &'static [u8] = include_bytes!("../../gpu/phong.glslf");
 const PHONG_TEX_VS: &'static [u8] = include_bytes!("../../gpu/phong_tex.glslv");
@@ -70,8 +83,13 @@ pub struct Technique<R: gfx::Resources> {
     state_alpha: gfx::DrawState,
     state_opaque: gfx::DrawState,
     state_multiply: gfx::DrawState,
+    light_buf: gfx::handle::Buffer<R, param::Light>,
     /// The default texture used for materials that don't have it.
     pub default_texture: gfx::handle::Texture<R>,
+    /// The light color of non-lit areas.
+    pub ambient_color: gfx::ColorValue,
+    /// Active lights.
+    pub lights: Vec<super::Light<f32>>,
 }
 
 impl<R: gfx::Resources> Technique<R> {
@@ -93,8 +111,33 @@ impl<R: gfx::Resources> Technique<R> {
             state_alpha: state.clone().blend(gfx::BlendPreset::Alpha),
             state_multiply: state.clone().blend(gfx::BlendPreset::Multiply),
             state_opaque: state,
+            light_buf: factory.create_buffer_dynamic(MAX_LIGHTS, gfx::BufferRole::Uniform),
             default_texture: texture,
+            ambient_color: [0.1, 0.1, 0.1, 0.0],
+            lights: Vec::new(),
         })
+    }
+
+    /// Update the light buffer before drawing.
+    pub fn update<S: gfx::Stream<R>>(&self, stream: &mut S) {
+        use cgmath::FixedArray;
+        for (i, lit) in self.lights.iter().enumerate() {
+            use super::light::Attenuation::*;
+            let par = param::Light {
+                position: *lit.position.as_fixed(),
+                color: lit.color,
+                attenuation: match lit.attenuation {
+                    Constant { intensity } => [1.0 / intensity, 0.0, 0.0, 0.0],
+                    Quadratic { k0, k1, k2 } => [k0, k1, k2, 0.0],
+                    Spherical { intensity, distance } => [
+                        1.0 / intensity,
+                        2.0 / distance,
+                        1.0 / (distance * distance),
+                        0.0],
+                },
+            };
+            stream.access().0.update_buffer(self.light_buf.raw(), &[par], i+1).unwrap()
+        }
     }
 }
 
@@ -130,12 +173,16 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
             },
             param::Struct {
                 mvp: [[0.0; 4]; 4],
+                world: [[0.0; 4]; 4],
                 normal: [[0.0; 3]; 3],
                 color: [0.0; 4],
+                ambient: [0.0; 4],
                 texture: (self.default_texture.clone(), None),
                 alpha_test: if let Cutout(v) = kernel.transparency {
                     v as f32 / 255 as f32
                 }else { 0.0 },
+                light_mask: [0; 4],
+                lights: self.light_buf.clone(),
                 _r: PhantomData,
             },
             None,
@@ -151,9 +198,24 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
     fn fix_params(&self, mat: &::Material<R>, space: &::view::Info<f32>,
                   params: &mut param::Struct<R>) {
         use cgmath::FixedArray;
+
         params.mvp = *space.mx_vertex.as_fixed();
+        params.world = *space.mx_world.as_fixed();
         params.normal = *space.mx_normal.as_fixed();
         params.color = mat.color;
+        params.ambient = self.ambient_color;
+
+        params.light_mask = self.lights.iter().enumerate().fold(
+            (0, 0, [0; 4]), |(mut bit, element, mut mask), (i, lit)| {
+                //TODO: frustum intersect with entity
+                if lit.active {
+                    mask[element] |= ((i + 1) as i32) << bit;
+                    bit += 8;
+                    (bit & 0x1F, element + (bit >> 5), mask)
+                } else { (bit, element, mask) }
+            }
+        ).2;
+
         if let Some(ref tex) = mat.texture {
             params.texture = tex.clone();
         }
