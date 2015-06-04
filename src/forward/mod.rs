@@ -122,10 +122,19 @@ impl<R: gfx::Resources> Technique<R> {
     pub fn update<S: gfx::Stream<R>>(&self, stream: &mut S) {
         use cgmath::FixedArray;
         for (i, lit) in self.lights.iter().enumerate() {
+            use super::light::Attenuation::*;
             let par = param::Light {
                 position: *lit.position.as_fixed(),
                 color: lit.color,
-                attenuation: [0.0; 4],
+                attenuation: match lit.attenuation {
+                    Constant { intensity } => [1.0 / intensity, 0.0, 0.0, 0.0],
+                    Quadratic { k0, k1, k2 } => [k0, k1, k2, 0.0],
+                    Spherical { intensity, distance } => [
+                        1.0 / intensity,
+                        2.0 / distance,
+                        1.0 / (distance * distance),
+                        0.0],
+                },
             };
             stream.access().0.update_buffer(self.light_buf.raw(), &[par], i+1).unwrap()
         }
