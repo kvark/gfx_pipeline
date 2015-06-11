@@ -163,7 +163,7 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
         })
     }
 
-    fn compile<'a>(&'a self, kernel: Kernel, _space: &::view::Info<f32>)
+    fn compile<'a>(&'a self, kernel: Kernel)
                    -> gfx_phase::TechResult<'a, R, param::Struct<R>> {
         use ::Transparency::*;
         (   if kernel.textured {
@@ -185,13 +185,13 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
                 lights: self.light_buf.clone(),
                 _r: PhantomData,
             },
-            None,
             match kernel.transparency {
                 Blend(gfx::BlendPreset::Add)      => &self.state_add,
                 Blend(gfx::BlendPreset::Alpha)    => &self.state_alpha,
                 Blend(gfx::BlendPreset::Multiply) => &self.state_multiply,
                 _ => &self.state_opaque,
-            }
+            },
+            None,
         )
     }
 

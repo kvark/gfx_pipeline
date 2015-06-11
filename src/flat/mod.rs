@@ -99,7 +99,7 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
         }
     }
 
-    fn compile<'a>(&'a self, kernel: Kernel, _space: &::view::Info<f32>)
+    fn compile<'a>(&'a self, kernel: Kernel)
                    -> gfx_phase::TechResult<'a, R, param::Struct<R>> {
         (   if kernel != Kernel::Flat {
                 &self.program_textured
@@ -115,8 +115,8 @@ impl<R: gfx::Resources> gfx_phase::Technique<R, ::Material<R>, ::view::Info<f32>
                 }else { 0.0 },
                 _r: PhantomData,
             },
-            None,
             &self.state,
+            None,
         )
     }
 
