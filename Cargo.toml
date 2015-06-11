@@ -13,5 +13,5 @@ name = "gfx_pipeline"
 [dependencies]
 cgmath = "*"
 gfx = "0.6.*"
-gfx_phase = "0.2"
-gfx_scene = "0.3"
+gfx_phase = "0.4"
+gfx_scene = "0.4"
